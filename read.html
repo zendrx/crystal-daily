@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Daily – Read</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fb;
+            color: #1e293b;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.02);
+            padding: 2rem;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .post-content {
+            line-height: 1.7;
+        }
+        .post-content h1, .post-content h2, .post-content h3 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+        }
+        .post-content h1 { font-size: 2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.3em; }
+        .post-content h2 { font-size: 1.5rem; }
+        .post-content p { margin-bottom: 1em; }
+        .post-content pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        .post-content code {
+            background: #f1f5f9;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.375rem;
+            font-family: 'Menlo', monospace;
+            font-size: 0.875em;
+        }
+        .post-content pre code {
+            background: transparent;
+            padding: 0;
+        }
+        .post-content blockquote {
+            border-left: 4px solid #9333ea;
+            padding-left: 1rem;
+            color: #475569;
+            margin: 1rem 0;
+        }
+        .post-content img {
+            max-width: 100%;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+        }
+        .loader, .error {
+            text-align: center;
+            padding: 3rem;
+        }
+        .loader { color: #3b82f6; }
+        .error { color: #b91c1c; background: #fee2e2; border-radius: 0.75rem; }
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        @media (max-width: 640px) {
+            .container { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <a href="index.html" class="back-link">← Back to all crystals</a>
+    <div id="content" class="post-content">
+        <div class="loader">Loading crystal...</div>
+    </div>
+    <footer>✨ Daily Crystal</footer>
+</div>
+
+<script>
+    const GITHUB_USER = "zendrx";
+    const GITHUB_REPO  = "crystal-daily";
+    const POSTS_FOLDER = "posts";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const postFilename = urlParams.get('post');
+
+    if (!postFilename) {
+        document.getElementById('content').innerHTML = '<div class="error">No post specified.</div>';
+    } else {
+        const rawUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${POSTS_FOLDER}/${postFilename}`;
+        fetch(rawUrl)
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.text();
+            })
+            .then(markdown => {
+                const html = marked.parse(markdown);
+                document.getElementById('content').innerHTML = html;
+                document.title = `Crystal Daily – ${postFilename.replace(/\.md$/, '')}`;
+            })
+            .catch(err => {
+                document.getElementById('content').innerHTML = `<div class="error">Failed to load post: ${err.message}</div>`;
+            });
+    }
+</script>
+</body>
+</html>
