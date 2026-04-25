@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Daily</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fb;
+            color: #1e293b;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #3b82f6, #9333ea);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .subtitle {
+            color: #475569;
+            margin-bottom: 2rem;
+            border-left: 4px solid #9333ea;
+            padding-left: 1rem;
+        }
+        .posts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        .post-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -2px rgba(0,0,0,0.05), 0 10px 15px -3px rgba(0,0,0,0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+        }
+        .post-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+            border-color: #cbd5e1;
+        }
+        .post-title {
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: #0f172a;
+        }
+        .post-preview {
+            color: #475569;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .reading-time {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .loader {
+            text-align: center;
+            padding: 3rem;
+            color: #3b82f6;
+        }
+        .error {
+            background: #fee2e2;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            text-align: center;
+        }
+        footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+        @media (max-width: 640px) {
+            body { padding: 1rem; }
+            h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>✨ Crystal Daily</h1>
+    <div class="subtitle">Markdown wisdom from the <code>posts/</code> folder</div>
+
+    <div id="postsContainer" class="posts-grid">
+        <div class="loader">Loading crystals...</div>
+    </div>
+    <footer>Powered by GitHub & marked.js</footer>
+</div>
+
+<script>
+    const GITHUB_USER = "zendrx";
+    const GITHUB_REPO  = "crystal-daily";
+    const POSTS_FOLDER = "posts";
+
+    const postsContainer = document.getElementById("postsContainer");
+
+    async function fetchPostList() {
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${POSTS_FOLDER}`;
+        try {
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error(`GitHub API error: ${response.status}`);
+            const files = await response.json();
+            const mdFiles = files.filter(file => file.name.endsWith('.md') && file.type === 'file');
+            if (mdFiles.length === 0) {
+                postsContainer.innerHTML = '<div class="error">No markdown posts found in /posts folder.</div>';
+                return [];
+            }
+            return mdFiles;
+        } catch (err) {
+            console.error(err);
+            postsContainer.innerHTML = `<div class="error">Failed to load posts: ${err.message}</div>`;
+            return [];
+        }
+    }
+
+    async function fetchMarkdownContent(downloadUrl) {
+        const res = await fetch(downloadUrl);
+        if (!res.ok) throw new Error("Failed to fetch markdown");
+        return await res.text();
+    }
+
+    function extractTitle(markdown, filename) {
+        const headingMatch = markdown.match(/^#\s+(.+)$/m);
+        if (headingMatch) return headingMatch[1].trim();
+        return filename.replace(/\.md$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function getPreview(markdown) {
+        const withoutHeadings = markdown.replace(/^#.*$/gm, '').trim();
+        const plain = withoutHeadings.replace(/[#*`>\[\]()]/g, '').slice(0, 180);
+        return plain.length < 180 ? plain : plain.slice(0, 177) + '...';
+    }
+
+    function readingTime(text) {
+        const words = text.trim().split(/\s+/).length;
+        const minutes = Math.ceil(words / 200);
+        return minutes === 1 ? '1 min read' : `${minutes} min read`;
+    }
+
+    async function renderPosts() {
+        const files = await fetchPostList();
+        if (files.length === 0) return;
+
+        postsContainer.innerHTML = '';
+        for (const file of files) {
+            try {
+                const markdown = await fetchMarkdownContent(file.download_url);
+                const title = extractTitle(markdown, file.name);
+                const preview = getPreview(markdown);
+                const time = readingTime(markdown);
+                const card = document.createElement('div');
+                card.className = 'post-card';
+                card.innerHTML = `
+                    <div class="post-title">${escapeHtml(title)}</div>
+                    <div class="post-preview">${escapeHtml(preview)}</div>
+                    <div class="reading-time">📖 ${time}</div>
+                `;
+                card.addEventListener('click', () => {
+                    window.location.href = `read.html?post=${encodeURIComponent(file.name)}`;
+                });
+                postsContainer.appendChild(card);
+            } catch (err) {
+                console.error(`Error loading ${file.name}:`, err);
+            }
+        }
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    renderPosts();
+</script>
+</body>
+</html>
