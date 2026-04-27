@@ -19,4 +19,5 @@ Whether you use Crystal for Agents directly or just link to API docs, the conver
 Links:
 
 - Crystal for Agents repository (see the forum post for the link)
+ [link](https://forum.crystal-lang.org/t/crystal-for-agents-v1-20-0-release/8889)
 - Crystal Forum discussion thread
